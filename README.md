@@ -58,13 +58,52 @@ evaluation-task/
 └── README.md
 ```
 
-## Running the Pipeline
+## Setup
 
-See the Jupyter notebook in the `notebook/` directory for the heavily-commented, end-to-end execution of both tracks. The pipeline relies on the Gemini API for post-correction and Test II vision processing:
+### Local Environment
+We recommend using Conda to manage the python environment:
+```bash
+conda create -n renaissance python=3.10
+conda activate renaissance
+pip install -r requirements.txt
+```
+
+Set your Gemini API key (required for LLM post-processing and Test II vision paths):
 ```bash
 export GEMINI_API_KEY="your-gemini-api-key"
 ```
-Install dependencies with `pip install -r requirements.txt`.
+
+### Kaggle (Recommended — Free T4 GPU)
+1. Upload the evaluation dataset and `src/` as a Kaggle dataset named `renaissance-ocr-data`.
+2. Add your `GEMINI_API_KEY` as a Kaggle secret.
+3. Open `notebook/RenAIssance_Evaluation_Task.ipynb`, attach the dataset, enable the GPU accelerator, and run all cells.
+
+### Google Colab (Fallback)
+1. Upload the evaluation dataset to Google Drive under `renaissance-ocr/`.
+2. Add `GEMINI_API_KEY` as a Colab secret.
+3. Open the notebook and run all cells (Runtime → Run all).
+
+---
+
+## Running the Pipeline
+
+The primary entry point is the heavily-commented Jupyter notebook in the `notebook/` directory, which provides an end-to-end execution of both tracks.
+
+Alternatively, the pipeline can be run modularly via the Python source codebase:
+```python
+from src.data_utils import load_all_pdfs, load_all_ground_truth
+from src.preprocessing import preprocess_page
+from src.text_detection import load_craft_model, detect_text_regions
+from src.ocr_model import load_trocr, predict_page
+from src.llm_postprocess import setup_gemini, correct_ocr_output
+
+# Load data
+pdf_map = load_all_pdfs('task-dataset/Test sources/Print', dpi=300)
+gt_map  = load_all_ground_truth('task-dataset/Test transcriptions/Print')
+
+# Execute preprocessing, CRAFT detection, TrOCR inference, and Gemini LLM post-correction...
+# See src/ modules and the notebook for detailed implementation.
+```
 
 ## References
 1. Li, M., et al. (2021). *TrOCR: Transformer-based optical character recognition with pre-trained models*.
