@@ -50,7 +50,7 @@ PDF → [PyMuPDF 300 DPI]
 evaluation-task/
 ├── notebook/
 │   ├── RenAIssance_Evaluation_Task.ipynb        # Main notebook with all pipeline code and outputs
-│   └── RenAIssance_Evaluation_Task_0_32013000...pdf # Exported PDF counterpart
+│   └── RenAIssance_Evaluation_Task.pdf # Exported PDF counterpart
 ├── src/                    # Source code modules (preprocessing, detection, etc.)
 ├── configs/                # Pipeline configurations
 ├── RenAIssance_Evaluation_Task_Report.pdf  # Comprehensive 6-page research report
