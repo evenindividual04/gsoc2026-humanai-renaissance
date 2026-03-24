@@ -1,0 +1,97 @@
+# RenAIssance OCR Pipeline Configuration
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+data:
+  pdf_dpi: 300
+  test_sources_dir: "../task-dataset/Test sources/Print"
+  test_transcriptions_dir: "../task-dataset/Test transcriptions/Print"
+  public_dataset_name: "biglam/europeana_newspapers"          # HuggingFace dataset for domain adaptation (historical PRINTED text)
+  val_split: 0.15
+  seed: 42
+
+# ── Preprocessing ─────────────────────────────────────────────────────────────
+preprocessing:
+  target_size: [1024, 128]     # (width, height) per line crop for TrOCR
+  deskew_max_angle: 10.0       # degrees
+  clahe_clip_limit: 3.0
+  clahe_tile_grid: [8, 8]
+  denoise_h: 10
+  denoise_template_window: 7
+  denoise_search_window: 21
+
+# ── Text Detection (CRAFT) ────────────────────────────────────────────────────
+craft:
+  weights_url: "https://github.com/clovaai/CRAFT-pytorch/releases/download/pre-trainedc.pth/craft_mlt_25k.pth"
+  text_threshold: 0.7
+  link_threshold: 0.4
+  low_text: 0.4
+  cuda: true
+  canvas_size: 1280
+  mag_ratio: 1.5
+  # Marginalia filtering
+  margin_fraction: 0.12        # ignore boxes in outer 12% of image width
+  min_line_height: 10          # pixels
+  min_line_width: 50           # pixels
+
+# ── TrOCR Model ───────────────────────────────────────────────────────────────
+trocr:
+  base_model: "microsoft/trocr-large-printed"
+  max_length: 128
+  num_beams: 4
+  no_repeat_ngram_size: 3
+  length_penalty: 2.0
+  # LoRA fine-tuning
+  lora_r: 8
+  lora_alpha: 16
+  lora_dropout: 0.1
+  lora_target_modules: ["query", "value"]
+
+# ── Training ──────────────────────────────────────────────────────────────────
+training:
+  # Domain adaptation on public dataset
+  domain_adapt:
+    num_epochs: 3
+    learning_rate: 5.0e-5
+    batch_size: 4
+    gradient_accumulation_steps: 4
+    warmup_steps: 100
+    weight_decay: 0.01
+    fp16: true
+    save_steps: 200
+    eval_steps: 200
+    early_stopping_patience: 2
+  # Task fine-tuning on GT data
+  task_finetune:
+    num_epochs: 10
+    learning_rate: 5.0e-6
+    batch_size: 2
+    gradient_accumulation_steps: 8
+    warmup_steps: 50
+    weight_decay: 0.01
+    fp16: true
+    save_steps: 50
+    eval_steps: 50
+    early_stopping_patience: 3
+
+# ── Augmentation ──────────────────────────────────────────────────────────────
+augmentation:
+  rotation_limit: 3
+  noise_var_limit: [10, 50]
+  elastic_alpha: 1
+  elastic_sigma: 50
+  elastic_alpha_affine: 50
+
+# ── LLM Post-processing (Gemini) ─────────────────────────────────────────────
+gemini:
+  model: "gemini-2.0-flash"
+  temperature: 0.1
+  max_output_tokens: 2048
+  batch_size: 5
+  rate_limit_sleep: 2.0        # seconds between API calls
+  cache_file: "../results/gemini_cache.json"
+
+# ── Evaluation ────────────────────────────────────────────────────────────────
+evaluation:
+  metrics: ["cer", "wer", "bleu"]
+  results_dir: "../results"
+  report_file: "../results/evaluation_report.json"
